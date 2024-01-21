@@ -1,5 +1,11 @@
 package com.cozyhome.onlineshop.orderservice.service.impl;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.stereotype.Service;
+
 import com.cozyhome.onlineshop.dto.order.DeliveryCompanyAdminDto;
 import com.cozyhome.onlineshop.dto.order.DeliveryCompanyDto;
 import com.cozyhome.onlineshop.exception.DataAlreadyExistException;
@@ -8,13 +14,8 @@ import com.cozyhome.onlineshop.orderservice.model.DeliveryCompany;
 import com.cozyhome.onlineshop.orderservice.model.enums.EntityStatus;
 import com.cozyhome.onlineshop.orderservice.repository.DeliveryCompanyRepository;
 import com.cozyhome.onlineshop.orderservice.service.DeliveryService;
-import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -22,8 +23,6 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     private final DeliveryCompanyRepository deliveryCompanyRepository;
     private final ModelMapper modelMapper;
-//    @Value("${delivery.company.status}")
-//    private EntityStatus status;
 
     @Override
     public List<DeliveryCompanyDto> getDeliveryCompanies() {
@@ -35,7 +34,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     }
 
     @Override
-    public DeliveryCompanyAdminDto saveNewDeliveryCompanies(String companyName) {
+    public DeliveryCompanyAdminDto saveNewDeliveryCompany(String companyName) {
         boolean existCompany = deliveryCompanyRepository.existsByNameAndStatus(companyName, EntityStatus.ACTIVE);
         if (existCompany) {
             throw new DataAlreadyExistException("Company " + companyName + " already exist. You can't add it.");
@@ -50,7 +49,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     }
 
     @Override
-    public DeliveryCompanyAdminDto deleteDeliveryCompanies(String companyName) {
+    public DeliveryCompanyAdminDto deleteDeliveryCompany(String companyName) {
         DeliveryCompany deliveryCompany = deliveryCompanyRepository.findByNameAndStatus(companyName, EntityStatus.ACTIVE)
                 .orElseThrow(() -> new DataNotFoundException("Company " + companyName + " doesn't exist."));
         deliveryCompany.setStatus(EntityStatus.DELETED);

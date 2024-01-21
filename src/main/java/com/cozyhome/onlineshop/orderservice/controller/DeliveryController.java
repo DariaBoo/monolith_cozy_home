@@ -48,7 +48,7 @@ public class DeliveryController {
             @ApiResponse(responseCode = SwaggerResponse.Code.CODE_200, description = SwaggerResponse.Message.CODE_200_FOUND_DESCRIPTION) })
     @PostMapping
     public ResponseEntity<DeliveryCompanyAdminDto> saveNewDeliveryCompany(@RequestParam @ValidName String companyName) {
-        return new ResponseEntity<>(deliveryService.saveNewDeliveryCompanies(companyName), HttpStatus.OK);
+        return new ResponseEntity<>(deliveryService.saveNewDeliveryCompany(companyName), HttpStatus.OK);
     }
 
     @Operation(summary = "Save new delivery company", description = "Save new delivery company")
@@ -56,6 +56,6 @@ public class DeliveryController {
             @ApiResponse(responseCode = SwaggerResponse.Code.CODE_200, description = SwaggerResponse.Message.CODE_200_FOUND_DESCRIPTION) })
     @DeleteMapping
     public ResponseEntity<DeliveryCompanyAdminDto> deleteDeliveryCompany(@RequestParam @ValidName String companyName) {
-        return new ResponseEntity<>(deliveryService.deleteDeliveryCompanies(companyName), HttpStatus.OK);
+        return new ResponseEntity<>(deliveryService.deleteDeliveryCompany(companyName), HttpStatus.OK);
     }
 }

@@ -8,7 +8,7 @@ import java.util.List;
 public interface DeliveryService {
     List<DeliveryCompanyDto> getDeliveryCompanies();
 
-    DeliveryCompanyAdminDto saveNewDeliveryCompanies(String companyName);
+    DeliveryCompanyAdminDto saveNewDeliveryCompany(String companyName);
 
-    DeliveryCompanyAdminDto deleteDeliveryCompanies(String companyName);
+    DeliveryCompanyAdminDto deleteDeliveryCompany(String companyName);
 }

@@ -7,6 +7,9 @@ import com.cozyhome.onlineshop.validation.ValidName;
 import com.cozyhome.onlineshop.validation.ValidOptionalComment;
 import com.cozyhome.onlineshop.validation.ValidOptionalName;
 import com.cozyhome.onlineshop.validation.ValidOptionalRegion;
+
+import jakarta.validation.constraints.Size;
+
 import com.cozyhome.onlineshop.validation.ValidOptionalAddress;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,9 +31,9 @@ public class DeliveryDto {
 
     @ValidOptionalAddress
     private String street;
-    @ValidOptionalAddress
+    @Size(min = 0, max = 30)
     private String house;
-    @ValidOptionalAddress
+    @Size(min = 0, max = 30)
     private String apartment;
     @ValidOptionalComment
     private String comment;
