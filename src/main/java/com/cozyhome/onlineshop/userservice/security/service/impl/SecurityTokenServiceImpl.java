@@ -26,9 +26,12 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Service
 public class SecurityTokenServiceImpl implements SecurityTokenService {
+	
 	private final EmailService emailService;
 	private final UserRepository userRepository;
 	private final SecurityTokenRepository securityTokenRepository;
+	
+	private final int EXPIRY_TIME_HOURS = 24;
 
 	@Value("${activation.message.link3000}")
 	private String activationLink3000;
@@ -116,7 +119,7 @@ public class SecurityTokenServiceImpl implements SecurityTokenService {
     }
 
 	private LocalDateTime calculateExpiryDate() {
-		return LocalDateTime.now().plus(24, ChronoUnit.HOURS);
+		return LocalDateTime.now().plus(EXPIRY_TIME_HOURS, ChronoUnit.HOURS);
 	}
 
 	private String generateRandomToken() {

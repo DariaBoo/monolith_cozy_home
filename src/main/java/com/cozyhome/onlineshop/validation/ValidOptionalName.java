@@ -19,7 +19,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Target({ TYPE, FIELD, ANNOTATION_TYPE, PARAMETER })
 @Retention(RUNTIME)
 public @interface ValidOptionalName {
-    String message() default "Invalid name. Region must be greater than or equal to 2 and less than or equal " +
+    String message() default "Invalid name. Name must be greater than or equal to 2 and less than or equal " +
             "to 32, letters and - only.";
 
     Class<?>[] groups() default {};
