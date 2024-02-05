@@ -1,5 +1,6 @@
 package com.cozyhome.onlineshop.dto;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
@@ -17,5 +18,5 @@ public class FavoriteProductsDto {
 	
     private short countOfPages;
     
-    private List<ProductDto> products;
+    private List<ProductDto> products = new ArrayList<>();
 }
