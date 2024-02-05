@@ -3,11 +3,11 @@ package com.cozyhome.onlineshop.productservice.repository.impl;
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.match;
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.sample;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
@@ -15,6 +15,7 @@ import org.springframework.data.mongodb.core.aggregation.LookupOperation;
 import org.springframework.data.mongodb.core.aggregation.MatchOperation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 
 import com.cozyhome.onlineshop.dto.filter.FilterDto;
@@ -54,18 +55,21 @@ public class ProductRepositoryCustomImpl implements ProductRepositoryCustom {
 	}
 
 	@Override
-	public List<Product> getBySkuCodeInAndCategoryIdsIn(List<String> skuCodesList, List<ObjectId> categoryIdsList, Pageable page){						
-		if (skuCodesList.isEmpty() | categoryIdsList.isEmpty()) {
-            return new ArrayList<>();
-        }
-		
-		Criteria criteria = Criteria.where("skuCode").in(skuCodesList).and("subCategory.$id").in(categoryIdsList);
-        Query query = new Query(criteria);
-        
-		List<Product> resultList = mongoTemplate.find(query, Product.class);
-		return resultList;
-	}
+	public Page<Product> getBySkuCodeInAndCategoryIdsIn(List<String> skuCodesList, List<ObjectId> categoryIdsList, Pageable page) {
+	    if (skuCodesList.isEmpty() || categoryIdsList.isEmpty()) {
+	        return Page.empty(); 
+	    }
 
+	    Criteria criteria = Criteria.where("skuCode").in(skuCodesList).and("subCategory.$id").in(categoryIdsList);
+	    Query query = new Query(criteria);
+
+	    long count = mongoTemplate.count(query, Product.class);
+
+	    List<Product> resultList = mongoTemplate.find(query.with(page), Product.class);
+
+	    return PageableExecutionUtils.getPage(resultList, page, () -> count);
+	}
+	
 	@Override
 	public List<Product> filterProductsByCriterias(FilterDto filter, Pageable page) {	
 
