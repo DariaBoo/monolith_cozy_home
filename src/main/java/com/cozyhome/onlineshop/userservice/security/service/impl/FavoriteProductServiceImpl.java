@@ -71,6 +71,9 @@ public class FavoriteProductServiceImpl implements FavoriteProductService {
 		Page<FavoriteProduct> favoriteProducts = favoriteProductsRepository.findAllByUserId(userId,
 				buildPageable(pageable));
 		List<Product> products = getProductsByFavorites(favoriteProducts.getContent());
+		if(products.isEmpty()) {
+			return new FavoriteProductsDto();
+		}
 		List<ProductDto> productDtoList = productBuilder.buildProductDtoList(products, true);
 		productDtoList.parallelStream().forEach(productDto -> productDto.setFavorite(true));
 		FavoriteProductsDto result = FavoriteProductsDto.builder().products(productDtoList)
