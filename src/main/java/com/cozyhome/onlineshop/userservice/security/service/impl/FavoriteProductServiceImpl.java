@@ -97,9 +97,13 @@ public class FavoriteProductServiceImpl implements FavoriteProductService {
 		}
 		List<ProductDto> productDtoList = productBuilder.buildProductDtoList(products, true);
 		productDtoList.parallelStream().forEach(productDto -> productDto.setFavorite(true));
-		FavoriteProductsDto result = FavoriteProductsDto.builder().products(productDtoList)
-				.countOfPages((short) (products.size()/pageable.getSize()))
+		FavoriteProductsDto result = FavoriteProductsDto.builder().products(productDtoList)				
 				.countOfProducts((short)products.size()).build();
+		if(pageable.getSize() > products.size()) {
+			result.setCountOfPages((short)1);
+		} else {
+			result.setCountOfPages((short) (products.size()/pageable.getSize()));
+		}
 		return result;
 	}
 

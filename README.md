@@ -52,5 +52,3 @@
   - Lombok
 
 - **Logging:** Logback
-
-``
