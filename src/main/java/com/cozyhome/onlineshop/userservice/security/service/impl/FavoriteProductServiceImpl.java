@@ -90,20 +90,16 @@ public class FavoriteProductServiceImpl implements FavoriteProductService {
 				.findAllIdsOnlyByActiveAndParentId(true, new ObjectId(categoryId)).stream().map(IdWrapper::getId)
 				.toList();
 
-		List<Product> products = productRepositoryCustom.getBySkuCodeInAndCategoryIdsIn(skuCodesList, subCategoriesList,
+		Page<Product> products = productRepositoryCustom.getBySkuCodeInAndCategoryIdsIn(skuCodesList, subCategoriesList,
 				buildPageable(pageable));
 		if(products.isEmpty()) {
 			return new FavoriteProductsDto();
 		}
-		List<ProductDto> productDtoList = productBuilder.buildProductDtoList(products, true);
+		List<ProductDto> productDtoList = productBuilder.buildProductDtoList(products.getContent(), true);
 		productDtoList.parallelStream().forEach(productDto -> productDto.setFavorite(true));
-		FavoriteProductsDto result = FavoriteProductsDto.builder().products(productDtoList)				
-				.countOfProducts((short)products.size()).build();
-		if(pageable.getSize() > products.size()) {
-			result.setCountOfPages((short)1);
-		} else {
-			result.setCountOfPages((short) (products.size()/pageable.getSize()));
-		}
+		FavoriteProductsDto result = FavoriteProductsDto.builder().products(productDtoList)
+				.countOfPages((short) products.getTotalPages())
+				.countOfProducts((short)products.getTotalElements()).build();
 		return result;
 	}
 
