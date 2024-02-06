@@ -1,5 +1,6 @@
 package com.cozyhome.onlineshop.basketservice.service.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,6 +31,9 @@ public class BasketServiceImpl implements BasketService {
 	@Override
 	public List<BasketDto> getBasket(String userId) {
 		List<BasketItem> basketItemList = basketRepository.findByUserId(userId);
+		if(basketItemList.isEmpty()) {
+			return new ArrayList<>();
+		}
 		List<FavoriteProduct> favoriteProductList = favoriteProductRepository.findAllByUserId(userId);
 		return basketBuilder.buildBasketDtoList(basketItemList, favoriteProductList);
 	}	
@@ -66,5 +70,6 @@ public class BasketServiceImpl implements BasketService {
 	public void replaceBasket(String userId, List<BasketItemDto> dtoList) {
 		basketRepository.deleteAllByUserId(userId);
 		basketRepository.saveAll(basketBuilder.buildBasketItemList(userId, dtoList));		
-	}		
+	}
+	
 }
