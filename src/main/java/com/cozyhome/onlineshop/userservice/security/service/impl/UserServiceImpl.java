@@ -70,6 +70,7 @@ public class UserServiceImpl implements UserService {
 		} else {
 			user.setStatus(UserStatusE.ACTIVE);
 			user.setActivated(true);
+			log.info("[ON saveUser] :: activate user with google authorization");
 		}
 		
 		Set<String> userRoles = signupRequest.getRoles();

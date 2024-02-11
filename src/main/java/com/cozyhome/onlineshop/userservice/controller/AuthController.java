@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import com.cozyhome.onlineshop.dto.auth.CustomSignupRequest;
 import com.cozyhome.onlineshop.dto.auth.EmailRequest;
 import com.cozyhome.onlineshop.dto.auth.LoginRequest;
 import com.cozyhome.onlineshop.dto.auth.MessageResponse;
@@ -184,9 +185,10 @@ public class AuthController {
 	@ApiResponses(value = {
 			@ApiResponse(responseCode = SwaggerResponse.Code.CODE_200, description = SwaggerResponse.Message.CODE_200_FOUND_DESCRIPTION) })
 	@PostMapping("/signup")
-	public ResponseEntity<MessageResponse> registerUser(@RequestBody @Valid SignupRequest signUpRequest) {
+	public ResponseEntity<MessageResponse> registerUser(@RequestBody @Valid CustomSignupRequest signUpRequest) {
 		String email = signUpRequest.getEmail();
 		if (userService.existsByEmail(email)) {
+			log.error("[ON registerUser] :: email is already in use.");
 			return ResponseEntity.badRequest().body(new MessageResponse(emailErrorMessage));
 		}
 		userService.saveUser(signUpRequest);

@@ -1,7 +1,5 @@
 package com.cozyhome.onlineshop.dto.auth;
 
-import java.util.Set;
-
 import com.cozyhome.onlineshop.validation.ValidName;
 import com.cozyhome.onlineshop.validation.ValidOptionalBirthday;
 import com.cozyhome.onlineshop.validation.ValidPassword;
