@@ -1,15 +1,15 @@
 package com.cozyhome.onlineshop.userservice.controller;
 
 import java.net.URI;
+import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.validation.annotation.Validated;
@@ -42,9 +42,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -68,7 +65,21 @@ public class AuthController {
 	private final SecurityService securityService;
 	private final JwtTokenUtil jwtTokenUtil;
 	private final SecurityTokenService securityTokenService;
-
+	
+	@Value("${spring.security.oauth2.client.provider.google.user-info-uri}")
+	private String userInfoEndpoint;
+	
+	@Value("${spring.security.oauth2.client.provider.google.token-uri}")
+	private String tokenEndpoint;
+	@Value("${spring.security.oauth2.client.registration.google.client-id}")
+	private String client_id;
+	@Value("${spring.security.oauth2.client.registration.google.client-secret}")
+	private String client_secret;
+	@Value("${spring.security.oauth2.client.registration.google.redirect-uri}")
+	private String redirect_uri;
+	@Value("${spring.security.oauth2.client.proveder.google.grant-type}")
+	private String grant_type ;
+	
 	private final String emailErrorMessage = "Error: Email is already in use!";
 
 	@Operation(summary = "Existing user login", description = "Allows an existing user to log in using his email and password.")
@@ -88,60 +99,85 @@ public class AuthController {
 			throw new AuthException("Authentication failed for user - " + username);
 		}
 	}
-	
+
 	@GetMapping("/google-login")
-    public ResponseEntity<Void> googleLogin() {		
+	public ResponseEntity<Void> getGoogleCode() {
 		return ResponseEntity.ok().build();
-    }
-	
+	}
+
 	@PostMapping("/google-login")
-	public ResponseEntity<TokenResponse> exchangeGoogleTokenToJWT(@RequestParam("code") String code) throws JsonMappingException, JsonProcessingException {
-	    String tokenEndpoint = "https://www.googleapis.com/oauth2/v4/token";
+	public ResponseEntity<TokenResponse> googleLogin(@RequestParam("code") String code) {
+		String jwtToken = "";
+		try {
+			Optional<String> accessToken = getGoogleAccessToken(code);
+			JsonNode userInfoNode = null;
+			if (accessToken.isPresent()) {
+				userInfoNode = recieveUserInfoFromAccessToken(accessToken.get());
+			}
+			if (userInfoNode != null) {
+				String userEmail = userInfoNode.get("email").asText();
+				if (userEmail != null) {
+					boolean isUserExists = userService.existsByEmail(userEmail);
+					if (!isUserExists) {
+						Optional<String> name = Optional.ofNullable(userInfoNode.get("given_name").asText());
+						SignupRequest signupRequest = new SignupRequest();
+						signupRequest.setEmail(userEmail);
+						if(name.isPresent()) {
+						signupRequest.setFirstName(name.get());
+						}
+						userService.saveUser(signupRequest);
+					} 
+					jwtToken = jwtTokenUtil.generateToken(userEmail);
+				}
+			}
+			return ResponseEntity.ok().body(new TokenResponse(jwtToken));
+		} catch (JsonProcessingException e) {
+			log.error("Json processing exception: " + e.getMessage());
+			return ResponseEntity.badRequest().build();
+		}
 
-	    MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
-	    requestBody.add("code", code);
-	    requestBody.add("client_id", "920811235941-7mhi8ad1m5qt42bumghsdvncadnj2jkf.apps.googleusercontent.com");
-	    requestBody.add("client_secret", "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");
-	    requestBody.add("redirect_uri", "http://localhost:8080/api/v1/auth/google-login");
-	    requestBody.add("grant_type", "authorization_code");
+	}
 
-	    HttpHeaders headers = new HttpHeaders();
-	    headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+	private JsonNode recieveUserInfoFromAccessToken(String accessToken)
+			throws JsonMappingException, JsonProcessingException {
+		
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("Authorization", "Bearer " + accessToken);
 
-	    HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
-	     
-	    try {
-	        ResponseEntity<String> responseEntity = new RestTemplate().postForEntity(tokenEndpoint, requestEntity, String.class);	        
-	        String responseBody = responseEntity.getBody();
+		RequestEntity<Void> request = new RequestEntity<>(headers, HttpMethod.GET, URI.create(userInfoEndpoint));
+		ResponseEntity<String> response = new RestTemplate().exchange(request, String.class);
 
-	        ObjectMapper objectMapper = new ObjectMapper();
-	        JsonNode jsonNode = objectMapper.readTree(responseBody);
+		ObjectMapper objectMapper = new ObjectMapper();
+		JsonNode userInfoNode = objectMapper.readTree(response.getBody());
+		return userInfoNode;
+	}
 
-	        String accessToken = jsonNode.get("access_token").asText();
-	        
-		    String userInfoEndpoint = "https://www.googleapis.com/oauth2/v1/userinfo";
-		    HttpHeaders headers2 = new HttpHeaders();
-		    headers2.set("Authorization", "Bearer " + accessToken);
+	private Optional<String> getGoogleAccessToken(String code) throws JsonMappingException, JsonProcessingException {
 
-		    RequestEntity<Void> request = new RequestEntity<>(headers2, HttpMethod.GET, URI.create(userInfoEndpoint));
-		    ResponseEntity<String> response = new RestTemplate().exchange(request, String.class);
+		MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
+		requestBody.add("code", code);
+		requestBody.add("client_id", client_id);
+		requestBody.add("client_secret", client_secret);
+		requestBody.add("redirect_uri", redirect_uri);
+		requestBody.add("grant_type", grant_type);
 
-		    ObjectMapper objectMapper2 = new ObjectMapper();
-		    JsonNode userInfoNode = objectMapper2.readTree(response.getBody());
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-		    String userEmail = userInfoNode.get("email").asText();
+		HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
 
-		    String jwtToken = "";
-		    if(userEmail != null) {
-		    jwtToken = jwtTokenUtil.generateToken(userEmail);
-		    }
-
-		    return ResponseEntity.ok().body(new TokenResponse(jwtToken));
-	    } catch (HttpClientErrorException e) {
-	        System.err.println("GOOGLE ERROR RESPONSE: " + e.getResponseBodyAsString());
-	        throw e;
-	    }
-
+		try {
+			ResponseEntity<String> responseEntity = new RestTemplate().postForEntity(tokenEndpoint, requestEntity,
+					String.class);
+			String responseBody = responseEntity.getBody();
+			ObjectMapper objectMapper = new ObjectMapper();
+			JsonNode jsonNode = objectMapper.readTree(responseBody);
+			String accessToken = jsonNode.get("access_token").asText();
+			return Optional.of(accessToken);
+		} catch (HttpClientErrorException e) {
+			log.error("GOOGLE ERROR RESPONSE: " + e.getResponseBodyAsString());
+			throw e;
+		}
 	}
 
 	@Operation(summary = "New user registration", description = "Registers a new user and sends an email with a link to activate his account.")
@@ -182,19 +218,19 @@ public class AuthController {
 			@ApiResponse(responseCode = SwaggerResponse.Code.CODE_200, description = SwaggerResponse.Message.CODE_200_FOUND_DESCRIPTION) })
 	@PostMapping("/login/reset")
 	public ResponseEntity<TokenResponse> resetPassword(@RequestParam @ValidUUID String resetPasswordToken,
-													   @RequestBody @Valid NewPasswordRequest newPassword) {
+			@RequestBody @Valid NewPasswordRequest newPassword) {
 		User user = userService.resetPassword(resetPasswordToken, newPassword);
 		String token = jwtTokenUtil.generateToken(user.getEmail());
 		return ResponseEntity.ok().body(new TokenResponse(token));
 	}
-	
+
 	@Operation(summary = "Delete user.", description = "Delete user.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = SwaggerResponse.Code.CODE_200, description = SwaggerResponse.Message.CODE_200_FOUND_DESCRIPTION) })
-    @PostMapping("/delete-account")
-    public ResponseEntity<String> deleteUser(@RequestBody @Valid EmailRequest emailRequest) {
-        userService.deleteUser(emailRequest.getEmail());
-        log.info("[ON deleteUser] :: user deleted successfully!");
-        return ResponseEntity.ok().build();
-    }
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = SwaggerResponse.Code.CODE_200, description = SwaggerResponse.Message.CODE_200_FOUND_DESCRIPTION) })
+	@PostMapping("/delete-account")
+	public ResponseEntity<String> deleteUser(@RequestBody @Valid EmailRequest emailRequest) {
+		userService.deleteUser(emailRequest.getEmail());
+		log.info("[ON deleteUser] :: user deleted successfully!");
+		return ResponseEntity.ok().build();
+	}
 }

@@ -56,7 +56,7 @@ public class JwtTokenUtil {
 				.setExpiration(new Date((new Date()).getTime() + tokenValiditi))
 				.signWith(key(), SignatureAlgorithm.HS256)
 				.compact();
-		log.info("[ON generateToken]:: token has generated successfully");
+		log.info("[ON generateToken]:: token for user [{}] has generated successfully", username);
 		return token;
 	}
 
