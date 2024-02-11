@@ -1,5 +1,6 @@
 package com.cozyhome.onlineshop.userservice.security.service.impl;
 
+import com.cozyhome.onlineshop.dto.auth.CustomSignupRequest;
 import com.cozyhome.onlineshop.dto.auth.NewPasswordRequest;
 import com.cozyhome.onlineshop.dto.auth.SignupRequest;
 import com.cozyhome.onlineshop.dto.user.PasswordUpdateRequest;
@@ -43,57 +44,59 @@ public class UserServiceImpl implements UserService {
 	private final SecurityTokenService securityTokenService;
 	private final UserBuilder userBuilder;
 
-	private final String admin = "admin";
-	private final String manager = "manager";
 	private final String roleErrorMessage = "Error: Role is not found.";
 
 	@Override
 	public void saveUser(SignupRequest signupRequest) {
+		
 		User user = User.builder()
 				.email(signupRequest.getEmail())
-				.password(encoder.encode(signupRequest.getPassword()))
 				.firstName(signupRequest.getFirstName())
-				.lastName(signupRequest.getLastName())
-				.phoneNumber(signupRequest.getPhoneNumber())
 				.createdAt(LocalDateTime.now())
-				.status(UserStatusE.ACTIVE)
 				.build();
 
-		if (signupRequest.getBirthday() != null && !signupRequest.getBirthday().isEmpty()) {
-			LocalDate birthday = LocalDate.parse(signupRequest.getBirthday());
-			user.setBirthday(birthday);
-		}
+		if(signupRequest instanceof CustomSignupRequest) {
+			CustomSignupRequest customSignupRequest = (CustomSignupRequest) signupRequest;
 
-		Set<String> userRoles = signupRequest.getRoles();
-		Set<Role> roles = new HashSet<>();
+			user.setPassword(encoder.encode(customSignupRequest.getPassword()));
+	        user.setFirstName(customSignupRequest.getFirstName());
+	        user.setLastName(customSignupRequest.getLastName());
+	        user.setPhoneNumber(customSignupRequest.getPhoneNumber());
 
-		if (userRoles == null) {
-			Role userRole = roleRepository.getByName(RoleE.ROLE_CUSTOMER)
-					.orElseThrow(() -> new RuntimeException(roleErrorMessage));
-			roles.add(userRole);
+	        if (customSignupRequest.getBirthday() != null && !customSignupRequest.getBirthday().isEmpty()) {
+	            LocalDate birthday = LocalDate.parse(customSignupRequest.getBirthday());
+	            user.setBirthday(birthday);
+	        }
 		} else {
-			userRoles.forEach(role -> {
-				switch (role) {
-				case admin:
-					Role adminRole = roleRepository.getByName(RoleE.ROLE_ADMIN)
-							.orElseThrow(() -> new RuntimeException(roleErrorMessage));
-					roles.add(adminRole);
-					break;
-				case manager:
-					Role managerRole = roleRepository.getByName(RoleE.ROLE_MANAGER)
-							.orElseThrow(() -> new RuntimeException(roleErrorMessage));
-					roles.add(managerRole);
-					break;
-				default:
-					Role userRole = roleRepository.getByName(RoleE.ROLE_CUSTOMER)
-							.orElseThrow(() -> new RuntimeException(roleErrorMessage));
-					roles.add(userRole);
-				}
-			});
+			user.setStatus(UserStatusE.ACTIVE);
+			user.setActivated(true);
 		}
+		
+		Set<String> userRoles = signupRequest.getRoles();
+		Set<Role> roles = getUserRoles(userRoles);
 		user.setRoles(roles);
+		
 		User savedUser = userRepository.save(user);
+		
+		if(!savedUser.isActivated()) {
 		securityTokenService.createActivationUserToken(savedUser);
+		}
+	}
+
+	private Set<Role> getUserRoles(Set<String> userRoles) {
+	    Set<Role> roles = new HashSet<>();
+
+	    if (userRoles == null || userRoles.isEmpty()) {
+	        roles.add(roleRepository.getByName(RoleE.ROLE_CUSTOMER)
+	                .orElseThrow(() -> new RuntimeException(roleErrorMessage)));
+	    } else {
+	        userRoles.forEach(role -> {
+	            Role foundRole = roleRepository.getByName(RoleE.getByRoleName(role))
+	                    .orElseThrow(() -> new RuntimeException(roleErrorMessage));
+	            roles.add(foundRole);
+	        });
+	    }
+	    return roles;
 	}
 
 	@Override
@@ -105,11 +108,12 @@ public class UserServiceImpl implements UserService {
 	public User activateUser(String token) {
 		SecurityToken activationToken = securityTokenRepository.findByToken(token);
 
-        if (activationToken == null || activationToken.isExpired()) {
-            throw new InvalidTokenException("Invalid or expired activation token");
-        }
+		if (activationToken == null || activationToken.isExpired()) {
+			throw new InvalidTokenException("Invalid or expired activation token");
+		}
 
 		User user = activationToken.getUser();
+		user.setStatus(UserStatusE.ACTIVE);
 		user.setActivated(true);
 		userRepository.save(user);
 
@@ -122,57 +126,58 @@ public class UserServiceImpl implements UserService {
 	public User resetPassword(String token, NewPasswordRequest newPassword) {
 		PasswordResetToken resetToken = (PasswordResetToken) securityTokenRepository.findByToken(token);
 
-        if (resetToken == null || resetToken.isExpired()) {
-            throw new InvalidTokenException("Invalid or expired token");
-        }
+		if (resetToken == null || resetToken.isExpired()) {
+			throw new InvalidTokenException("Invalid or expired token");
+		}
 
-        User user = resetToken.getUser();
-        user.setPassword(encoder.encode(newPassword.getPassword()));
+		User user = resetToken.getUser();
+		user.setPassword(encoder.encode(newPassword.getPassword()));
 		user.setModifiedAt(LocalDateTime.now());
-        userRepository.save(user);
+		userRepository.save(user);
 
-        securityTokenRepository.delete(resetToken);	
-        return user;
+		securityTokenRepository.delete(resetToken);
+		return user;
 	}
 
-    @Override
-    public void updateUserPassword(PasswordUpdateRequest passwords, String userId) {
-        User user = userRepository.findByIdAndStatus(userId, UserStatusE.ACTIVE)
-                .orElseThrow(() -> new DataNotFoundException("Unable to update password. User not found."));
-        if (encoder.matches(passwords.getOldPassword(), user.getPassword())) {
-            user.setPassword(encoder.encode(passwords.getNewPassword()));
-            userRepository.save(user);
-        } else {
-            throw new AuthException("Wrong old password entered.");
-        }
-    }
+	@Override
+	public void updateUserPassword(PasswordUpdateRequest passwords, String userId) {
+		User user = userRepository.findByIdAndStatus(userId, UserStatusE.ACTIVE)
+				.orElseThrow(() -> new DataNotFoundException("Unable to update password. User not found."));
+		if (encoder.matches(passwords.getOldPassword(), user.getPassword())) {
+			user.setPassword(encoder.encode(passwords.getNewPassword()));
+			userRepository.save(user);
+		} else {
+			throw new AuthException("Wrong old password entered.");
+		}
+	}
 
-    @Override
-    public UserInformationResponse updateUserData(UserInformationRequest userInformationDto, String userId) {
-        User user = userRepository.findByIdAndStatus(userId, UserStatusE.ACTIVE)
-                .orElseThrow(() -> new DataNotFoundException(
-                        String.format("User with email = %s not found.", userInformationDto.getEmail())));
+	@Override
+	public UserInformationResponse updateUserData(UserInformationRequest userInformationDto, String userId) {
+		User user = userRepository.findByIdAndStatus(userId, UserStatusE.ACTIVE)
+				.orElseThrow(() -> new DataNotFoundException(
+						String.format("User with email = %s not found.", userInformationDto.getEmail())));
 
 		user.setLastName(userInformationDto.getLastName());
 		user.setFirstName(userInformationDto.getFirstName());
 		user.setPhoneNumber(userInformationDto.getPhoneNumber());
 		user.setModifiedAt(LocalDateTime.now());
 
-        if (!user.getEmail().equals(userInformationDto.getEmail())) {
-            if (userRepository.existsByEmailAndStatus(userInformationDto.getEmail(), UserStatusE.ACTIVE)) {
-                throw new DataAlreadyExistException(String.format("Email %s is already in use", userInformationDto.getEmail()));
-            }
-            user.setEmail(userInformationDto.getEmail());
-        }
+		if (!user.getEmail().equals(userInformationDto.getEmail())) {
+			if (userRepository.existsByEmailAndStatus(userInformationDto.getEmail(), UserStatusE.ACTIVE)) {
+				throw new DataAlreadyExistException(
+						String.format("Email %s is already in use", userInformationDto.getEmail()));
+			}
+			user.setEmail(userInformationDto.getEmail());
+		}
 
 		if (!userInformationDto.getBirthday().isEmpty()) {
 			LocalDate birthday = LocalDate.parse(userInformationDto.getBirthday());
 			user.setBirthday(birthday);
 		}
 
-        User updatedUser = userRepository.save(user);
-        return userBuilder.buildUserInformationResponse(updatedUser);
-    }
+		User updatedUser = userRepository.save(user);
+		return userBuilder.buildUserInformationResponse(updatedUser);
+	}
 
 	@Override
 	public UserInformationResponse getUserInfo(String userId) {
@@ -181,13 +186,13 @@ public class UserServiceImpl implements UserService {
 		return userBuilder.buildUserInformationResponse(user);
 	}
 
-    @Override
-    public void deleteUser(String email) {
-        User user = userRepository.findByEmailAndStatus(email, UserStatusE.ACTIVE)
-                .orElseThrow(() -> new DataNotFoundException("Not user found by the email " + email));
-        user.setModifiedAt(LocalDateTime.now());
-        user.setStatus(UserStatusE.DELETED);
-        log.info("[ON deleteUser] :: changed the user status to DELETED for the user with email {}", email);
-        userRepository.save(user);
-    }
+	@Override
+	public void deleteUser(String email) {
+		User user = userRepository.findByEmailAndStatus(email, UserStatusE.ACTIVE)
+				.orElseThrow(() -> new DataNotFoundException("Not user found by the email " + email));
+		user.setModifiedAt(LocalDateTime.now());
+		user.setStatus(UserStatusE.DELETED);
+		log.info("[ON deleteUser] :: changed the user status to DELETED for the user with email {}", email);
+		userRepository.save(user);
+	}
 }

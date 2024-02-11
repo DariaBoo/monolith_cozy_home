@@ -29,7 +29,7 @@ public enum ProductQuantityStatus {
         }
     }
 
-    public static String getDescriptionForFalseAvailability(boolean isAvailable) {
+    public static String getDescriptionForAvailability(boolean isAvailable) {
         if (isAvailable) {
             return IN_STOCK.description;
         }
