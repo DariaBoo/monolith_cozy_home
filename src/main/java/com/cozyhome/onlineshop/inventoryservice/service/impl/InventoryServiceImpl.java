@@ -75,9 +75,8 @@ public class InventoryServiceImpl implements InventoryService {
 				checkAvailableAndStatus
 						.add(new InventoryForBasketDto(productColor, new ProductAvailabilityDto(inventory.get(),
 								ProductQuantityStatus.getStatusByQuantity(inventory.get()))));
-				log.info("Get availableProductQuantity and quantityStatus for product with skuCode = "
-						+ productColor.getProductSkuCode() + ", and color hex = " + productColor.getColorHex()
-						+ "method: getProductAvailableStatus");
+				log.info("[ON getProductAvailableStatus] :: Get availableProductQuantity and quantityStatus for product with skuCode = "
+						+ productColor.getProductSkuCode() + ", and color hex = " + productColor.getColorHex());
 			}
 		}
 		

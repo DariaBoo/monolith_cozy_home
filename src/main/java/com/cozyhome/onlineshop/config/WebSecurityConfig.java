@@ -70,7 +70,7 @@ public class WebSecurityConfig {
 		http.authenticationProvider(authenticationProvider());
 		http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
 		http.cors(Customizer.withDefaults());
-//		http.oauth2Login(Customizer.withDefaults());
+		http.oauth2Login(Customizer.withDefaults());
 //		http.oauth2Client(Customizer.withDefaults());
 //		http.oauth2ResourceServer(Customizer.withDefaults());
 		return http.build();
