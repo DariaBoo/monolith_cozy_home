@@ -17,10 +17,12 @@ import com.cozyhome.onlineshop.inventoryservice.repository.ProductColorRepositor
 import com.cozyhome.onlineshop.userservice.model.FavoriteProduct;
 import com.cozyhome.onlineshop.userservice.repository.FavoriteProductRepository;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Service
+@Transactional
 public class BasketServiceImpl implements BasketService {
 
 	private final BasketRepository basketRepository;
@@ -52,7 +54,8 @@ public class BasketServiceImpl implements BasketService {
 	                .findFirst();
 
 	        if (existingBasketItem.isPresent()) {
-	            existingBasketItem.get().setQuantity(newBasketItem.getQuantity());
+	        	int newQuantity = existingBasketItem.get().getQuantity() + newBasketItem.getQuantity();
+	            existingBasketItem.get().setQuantity(newQuantity);
 	        } else {
 	            BasketItem basketItemToSave = BasketItem.builder()
 	                    .productColor(productColor)
@@ -61,7 +64,7 @@ public class BasketServiceImpl implements BasketService {
 	                    .build();
 	            existingBasket.add(basketItemToSave);
 	        }
-	    }	    
+	    }	
 	    basketRepository.saveAll(existingBasket);
 	    return getBasket(userId);
 	}
@@ -70,6 +73,5 @@ public class BasketServiceImpl implements BasketService {
 	public void replaceBasket(String userId, List<BasketItemDto> dtoList) {
 		basketRepository.deleteAllByUserId(userId);
 		basketRepository.saveAll(basketBuilder.buildBasketItemList(userId, dtoList));		
-	}
-	
+	}	
 }

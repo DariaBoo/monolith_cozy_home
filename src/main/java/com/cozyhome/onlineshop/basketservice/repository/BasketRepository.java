@@ -10,6 +10,7 @@ import jakarta.transaction.Transactional;
 
 public interface BasketRepository extends JpaRepository<BasketItem, Integer>{
 	
+	@Transactional
 	List<BasketItem> findByUserId(String userId);
 
 	@Transactional

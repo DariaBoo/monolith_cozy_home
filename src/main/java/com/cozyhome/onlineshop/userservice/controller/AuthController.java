@@ -1,6 +1,17 @@
 package com.cozyhome.onlineshop.userservice.controller;
 
+import java.net.URI;
+
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
 import com.cozyhome.onlineshop.dto.auth.EmailRequest;
 import com.cozyhome.onlineshop.dto.auth.LoginRequest;
@@ -24,7 +37,14 @@ import com.cozyhome.onlineshop.userservice.security.service.SecurityService;
 import com.cozyhome.onlineshop.userservice.security.service.SecurityTokenService;
 import com.cozyhome.onlineshop.userservice.security.service.UserService;
 import com.cozyhome.onlineshop.validation.ValidUUID;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -67,6 +87,61 @@ public class AuthController {
 			log.warn("[ON login]:: Authentication failed for user: {}", username);
 			throw new AuthException("Authentication failed for user - " + username);
 		}
+	}
+	
+	@GetMapping("/google-login")
+    public ResponseEntity<Void> googleLogin() {		
+		return ResponseEntity.ok().build();
+    }
+	
+	@PostMapping("/google-login")
+	public ResponseEntity<TokenResponse> exchangeGoogleTokenToJWT(@RequestParam("code") String code) throws JsonMappingException, JsonProcessingException {
+	    String tokenEndpoint = "https://www.googleapis.com/oauth2/v4/token";
+
+	    MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
+	    requestBody.add("code", code);
+	    requestBody.add("client_id", "920811235941-7mhi8ad1m5qt42bumghsdvncadnj2jkf.apps.googleusercontent.com");
+	    requestBody.add("client_secret", "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");
+	    requestBody.add("redirect_uri", "http://localhost:8080/api/v1/auth/google-login");
+	    requestBody.add("grant_type", "authorization_code");
+
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+	    HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
+	     
+	    try {
+	        ResponseEntity<String> responseEntity = new RestTemplate().postForEntity(tokenEndpoint, requestEntity, String.class);	        
+	        String responseBody = responseEntity.getBody();
+
+	        ObjectMapper objectMapper = new ObjectMapper();
+	        JsonNode jsonNode = objectMapper.readTree(responseBody);
+
+	        String accessToken = jsonNode.get("access_token").asText();
+	        
+		    String userInfoEndpoint = "https://www.googleapis.com/oauth2/v1/userinfo";
+		    HttpHeaders headers2 = new HttpHeaders();
+		    headers2.set("Authorization", "Bearer " + accessToken);
+
+		    RequestEntity<Void> request = new RequestEntity<>(headers2, HttpMethod.GET, URI.create(userInfoEndpoint));
+		    ResponseEntity<String> response = new RestTemplate().exchange(request, String.class);
+
+		    ObjectMapper objectMapper2 = new ObjectMapper();
+		    JsonNode userInfoNode = objectMapper2.readTree(response.getBody());
+
+		    String userEmail = userInfoNode.get("email").asText();
+
+		    String jwtToken = "";
+		    if(userEmail != null) {
+		    jwtToken = jwtTokenUtil.generateToken(userEmail);
+		    }
+
+		    return ResponseEntity.ok().body(new TokenResponse(jwtToken));
+	    } catch (HttpClientErrorException e) {
+	        System.err.println("GOOGLE ERROR RESPONSE: " + e.getResponseBodyAsString());
+	        throw e;
+	    }
+
 	}
 
 	@Operation(summary = "New user registration", description = "Registers a new user and sends an email with a link to activate his account.")
