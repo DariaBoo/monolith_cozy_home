@@ -77,13 +77,20 @@ public class BasketBuilder {
 						"No product found by skuCode " + basketItem.getProductColor().getProductSkuCode()));
 
 		String imagePah = imagePathBase + imageProduct.getSliderImageName();
+		int availableProductQuantity = inventory.getProductAvailabilityDto().getAvailableProductQuantity();
+		int productQuantity = basketItem.getQuantity();
 		BasketDto dto = BasketDto.builder().skuCode(product.getSkuCode()).productName(product.getName())
 				.price(product.getPrice()).imagePath(imagePah).colorHex(basketItem.getProductColor().getColorHex())
 				.colorName(ColorsEnum.getColorNameByHex(basketItem.getProductColor().getColorHex()))
-				.quantity(basketItem.getQuantity())
-				.availableProductQuantity(inventory.getProductAvailabilityDto().getAvailableProductQuantity())
+				.availableProductQuantity(availableProductQuantity)
 				.quantityStatus(inventory.getProductAvailabilityDto().getQuantityStatus()).build();
-
+		
+		if(productQuantity > availableProductQuantity) {
+			dto.setQuantity(availableProductQuantity);
+		} else {
+			dto.setQuantity(productQuantity);
+		}
+		
 		if (product.getDiscount() > 0) {
 			dto.setPriceWithDiscount(product.getPriceWithDiscount());
 		}
