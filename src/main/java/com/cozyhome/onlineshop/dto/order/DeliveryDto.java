@@ -42,6 +42,6 @@ public class DeliveryDto {
     private String deliveryCompanyName;
     @ValidOptionalRegion
     private String region;
-    @ValidOptionalAddress
+    @Size(min = 0, max = 32)
     private String postOffice;
 }

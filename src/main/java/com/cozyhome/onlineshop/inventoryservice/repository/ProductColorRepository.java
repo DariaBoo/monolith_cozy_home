@@ -11,5 +11,4 @@ import com.cozyhome.onlineshop.inventoryservice.model.ProductColor;
 public interface ProductColorRepository extends JpaRepository<ProductColor, Integer>{
 	
 	Optional<ProductColor> findByProductSkuCodeAndColorHex(String productSkuCode, String colorHex);
-
 }
