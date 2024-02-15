@@ -11,6 +11,8 @@ import java.util.Optional;
 public interface DeliveryCompanyRepository extends MongoRepository<DeliveryCompany, ObjectId> {
 
     List<DeliveryCompany> findAllByStatus(EntityStatus status);
+    
     boolean existsByNameAndStatus(String companyName, EntityStatus status);
+    
     Optional<DeliveryCompany> findByNameAndStatus(String name, EntityStatus status);
 }

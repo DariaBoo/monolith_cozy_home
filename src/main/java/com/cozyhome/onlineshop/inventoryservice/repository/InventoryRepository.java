@@ -20,4 +20,5 @@ public interface InventoryRepository extends JpaRepository<Inventory, Integer>{
 	@Query("SELECT inv.quantity FROM Inventory inv JOIN inv.productColor pc WHERE pc.productSkuCode = ?1 AND pc.colorHex = ?2")
 	Optional<Integer> findQuantityByProductSkuCodeAndColorHex(String productSkuCode, String colorHex);
 
+	Optional<Inventory> findByProductColorId(int id);
 }

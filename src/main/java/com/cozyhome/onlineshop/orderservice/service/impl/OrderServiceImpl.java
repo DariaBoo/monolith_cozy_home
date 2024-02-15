@@ -12,6 +12,9 @@ import com.cozyhome.onlineshop.dto.EmailMessageDto;
 import com.cozyhome.onlineshop.dto.order.OrderDto;
 import com.cozyhome.onlineshop.dto.order.OrderNumberDto;
 import com.cozyhome.onlineshop.emailservice.EmailService;
+import com.cozyhome.onlineshop.exception.DataNotFoundException;
+import com.cozyhome.onlineshop.inventoryservice.model.Inventory;
+import com.cozyhome.onlineshop.inventoryservice.repository.InventoryRepository;
 import com.cozyhome.onlineshop.orderservice.model.Delivery;
 import com.cozyhome.onlineshop.orderservice.model.Order;
 import com.cozyhome.onlineshop.orderservice.model.OrderItem;
@@ -28,10 +31,12 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Service
 public class OrderServiceImpl implements OrderService {
+	
     private final OrderRepository orderRepository;
     private final OrderItemBuilder orderItemBuilder;
     private final DeliveryBuilder deliveryBuilder;
     private final EmailService emailService;
+    private final InventoryRepository inventoryRepository;
     
     @Value("${order.message.subject}")
 	private String activationEmailSubject;
@@ -145,5 +150,26 @@ public class OrderServiceImpl implements OrderService {
             isExist = orderRepository.existsByOrderNumber(orderNumber);
         }
         return orderNumber;
+    }
+    
+    public void deleteOrder(Order order) {
+    		for(OrderItem orderItem : order.getOrderItem()) {
+    		Inventory inventory = inventoryRepository.findByProductColorId(orderItem.getProductColorId())
+                    .orElseThrow(() -> new DataNotFoundException("Product with sku code and color is not found"));
+    		int updatedQuantity = inventory.getQuantity() + orderItem.getQuantity();
+    		inventory.setQuantity(updatedQuantity);
+    		inventoryRepository.save(inventory); 
+    		log.info("[ON deleteOrder] :: set new quantity for order with number {}", order.getOrderNumber());
+    		orderRepository.delete(order);
+    		log.info("[ON deleteOrder] :: delete order, status {}", orderRepository.existsByOrderNumber(order.getOrderNumber()));
+    	}
+    }
+    
+    public void deleteByEmail(String email) {
+    	List<Order> orderList = orderRepository.getByEmail(email);
+    	log.info("[ON deleteByEmail] :: Get a list of orders {} for email {}", orderList, email);
+    	for(Order order : orderList) {
+    		deleteOrder(order);
+    	}
     }
 }
