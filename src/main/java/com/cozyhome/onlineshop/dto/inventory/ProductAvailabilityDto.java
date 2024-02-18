@@ -1,13 +1,18 @@
 package com.cozyhome.onlineshop.dto.inventory;
 
+import com.cozyhome.onlineshop.dto.request.ProductColorDto;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
+@Builder
 @Data
 public class ProductAvailabilityDto {
-    private int availableProductQuantity;
-    private String quantityStatus;
+	
+    private ProductColorDto productColorDto;
+    
+    private AvailabilityStatusDto availabilityStatusDto;
 }

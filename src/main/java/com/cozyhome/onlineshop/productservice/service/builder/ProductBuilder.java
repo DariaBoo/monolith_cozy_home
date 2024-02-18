@@ -18,7 +18,7 @@ import com.cozyhome.onlineshop.dto.ProductDto;
 import com.cozyhome.onlineshop.dto.ProductForBasketDto;
 import com.cozyhome.onlineshop.dto.ProductSearchDto;
 import com.cozyhome.onlineshop.dto.SearchResultDto;
-import com.cozyhome.onlineshop.dto.inventory.ProductAvailabilityDto;
+import com.cozyhome.onlineshop.dto.inventory.AvailabilityStatusDto;
 import com.cozyhome.onlineshop.dto.inventory.QuantityStatusDto;
 import com.cozyhome.onlineshop.dto.productcard.ColorQuantityStatusDto;
 import com.cozyhome.onlineshop.dto.productcard.ProductCardDto;
@@ -217,7 +217,7 @@ public class ProductBuilder {
 
 	public List<ProductForBasketDto> buildProductsShopCard(Map<String, Product> productsMap,
 			Map<ProductColorDto, ImageProduct> imagesMap, List<ProductColorDto> productColorDtos,
-			Map<ProductColorDto, ProductAvailabilityDto> productAvailabilityMap) {
+			Map<ProductColorDto, AvailabilityStatusDto> productAvailabilityMap) {
 		List<ProductForBasketDto> productShopCards = new ArrayList<>();
 		productColorDtos.forEach(productColor -> {
 			BigDecimal discount = BigDecimal.valueOf(productsMap.get(productColor.getProductSkuCode()).getDiscount());

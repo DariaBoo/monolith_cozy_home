@@ -1,6 +1,6 @@
 package com.cozyhome.onlineshop.inventoryservice.controller;
 
-import com.cozyhome.onlineshop.dto.inventory.InventoryForBasketDto;
+import com.cozyhome.onlineshop.dto.inventory.ProductAvailabilityDto;
 import com.cozyhome.onlineshop.dto.inventory.QuantityStatusDto;
 import com.cozyhome.onlineshop.dto.request.ProductColorDto;
 import com.cozyhome.onlineshop.inventoryservice.service.InventoryService;
@@ -39,7 +39,7 @@ public class InventoryController {
 
 	// for basket
 	@PostMapping("/shopping-card-info")
-	public ResponseEntity<List<InventoryForBasketDto>> getProductAvailableStatus(@RequestBody List<ProductColorDto> productColorDto) {
+	public ResponseEntity<List<ProductAvailabilityDto>> getProductAvailableStatus(@RequestBody List<ProductColorDto> productColorDto) {
 		return ResponseEntity.ok(inventoryService.getProductAvailableStatus(productColorDto));
 	}
 }

@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import com.cozyhome.onlineshop.basketservice.model.BasketItem;
 import com.cozyhome.onlineshop.dto.basket.BasketDto;
 import com.cozyhome.onlineshop.dto.basket.BasketItemDto;
-import com.cozyhome.onlineshop.dto.inventory.InventoryForBasketDto;
+import com.cozyhome.onlineshop.dto.inventory.ProductAvailabilityDto;
 import com.cozyhome.onlineshop.dto.request.ProductColorDto;
 import com.cozyhome.onlineshop.exception.DataNotFoundException;
 import com.cozyhome.onlineshop.inventoryservice.model.ProductColor;
@@ -45,12 +45,12 @@ public class BasketBuilder {
 		Map<ProductColorDto, ImageProduct> imageMap = getImageMap(basketItemList);
 		List<ProductColorDto> productColorDtoList = basketItemList.parallelStream()
 				.map(basketItem -> modelMapper.map(basketItem.getProductColor(), ProductColorDto.class)).toList();
-		List<InventoryForBasketDto> inventoryForBasketList = inventoryService
+		List<ProductAvailabilityDto> inventoryForBasketList = inventoryService
 				.getProductAvailableStatus(productColorDtoList);
 		List<BasketDto> basketDtoList = new ArrayList<>();
 		for (BasketItem basketItem : basketItemList) {
 			ProductColorDto productColorDto = modelMapper.map(basketItem.getProductColor(), ProductColorDto.class);
-			InventoryForBasketDto inventory = inventoryForBasketList.stream()
+			ProductAvailabilityDto inventory = inventoryForBasketList.stream()
 					.filter(inventoryDto -> inventoryDto.getProductColorDto().equals(productColorDto)).findAny()
 					.orElseThrow(() -> new DataNotFoundException("No available quantity found"));
 			BasketDto dto = buildBasketDto(basketItem, imageMap.get(productColorDto), inventory);
@@ -71,19 +71,19 @@ public class BasketBuilder {
 	}
 
 	private BasketDto buildBasketDto(BasketItem basketItem, ImageProduct imageProduct,
-			InventoryForBasketDto inventory) {
+			ProductAvailabilityDto productAvailabilityDto) {
 		Product product = productRepository.findBySkuCode(basketItem.getProductColor().getProductSkuCode())
 				.orElseThrow(() -> new IllegalArgumentException(
 						"No product found by skuCode " + basketItem.getProductColor().getProductSkuCode()));
 
 		String imagePah = imagePathBase + imageProduct.getSliderImageName();
-		int availableProductQuantity = inventory.getProductAvailabilityDto().getAvailableProductQuantity();
+		int availableProductQuantity = productAvailabilityDto.getAvailabilityStatusDto().getAvailableProductQuantity();
 		int productQuantity = basketItem.getQuantity();
 		BasketDto dto = BasketDto.builder().skuCode(product.getSkuCode()).productName(product.getName())
 				.price(product.getPrice()).imagePath(imagePah).colorHex(basketItem.getProductColor().getColorHex())
 				.colorName(ColorsEnum.getColorNameByHex(basketItem.getProductColor().getColorHex()))
 				.availableProductQuantity(availableProductQuantity)
-				.quantityStatus(inventory.getProductAvailabilityDto().getQuantityStatus()).build();
+				.quantityStatus(productAvailabilityDto.getAvailabilityStatusDto().getQuantityStatus()).build();
 		
 		if(productQuantity > availableProductQuantity) {
 			dto.setQuantity(availableProductQuantity);

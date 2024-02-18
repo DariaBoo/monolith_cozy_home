@@ -1,17 +1,5 @@
 package com.cozyhome.onlineshop.inventoryservice.service.impl;
 
-import com.cozyhome.onlineshop.dto.inventory.ProductAvailabilityDto;
-import com.cozyhome.onlineshop.dto.inventory.InventoryForBasketDto;
-import com.cozyhome.onlineshop.dto.request.ProductColorDto;
-import com.cozyhome.onlineshop.dto.inventory.QuantityStatusDto;
-import com.cozyhome.onlineshop.inventoryservice.model.Inventory;
-import com.cozyhome.onlineshop.inventoryservice.model.enums.ProductQuantityStatus;
-import com.cozyhome.onlineshop.inventoryservice.repository.InventoryRepository;
-import com.cozyhome.onlineshop.inventoryservice.service.InventoryService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,11 +7,31 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.stereotype.Service;
+
+import com.cozyhome.onlineshop.dto.inventory.AvailabilityStatusDto;
+import com.cozyhome.onlineshop.dto.inventory.ProductAvailabilityDto;
+import com.cozyhome.onlineshop.dto.inventory.QuantityStatusDto;
+import com.cozyhome.onlineshop.dto.request.ProductColorDto;
+import com.cozyhome.onlineshop.inventoryservice.model.Inventory;
+import com.cozyhome.onlineshop.inventoryservice.model.enums.ProductQuantityStatus;
+import com.cozyhome.onlineshop.inventoryservice.repository.InventoryRepository;
+import com.cozyhome.onlineshop.inventoryservice.service.InventoryService;
+import com.cozyhome.onlineshop.productservice.model.Product;
+import com.cozyhome.onlineshop.productservice.repository.ProductRepository;
+
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 @Slf4j
 @RequiredArgsConstructor
 @Service
+@Transactional
 public class InventoryServiceImpl implements InventoryService {
+	
 	private final InventoryRepository inventoryRepository;
+	private final ProductRepository productRepository;
 
 	@Override
 	public int getQuantityByProductColor(ProductColorDto request) {
@@ -65,22 +73,22 @@ public class InventoryServiceImpl implements InventoryService {
 	}
 
 	@Override
-	public List<InventoryForBasketDto> getProductAvailableStatus(List<ProductColorDto> productColorDto) {
-		List<InventoryForBasketDto> checkAvailableAndStatus = new ArrayList<>();
+	public List<ProductAvailabilityDto> getProductAvailableStatus(List<ProductColorDto> productColorDto) {
+		List<ProductAvailabilityDto> availabilityInfoList = new ArrayList<>();
 		for (ProductColorDto productColor : productColorDto) {
 			Optional<Integer> inventory = inventoryRepository.findQuantityByProductSkuCodeAndColorHex(
 					productColor.getProductSkuCode(), productColor.getColorHex());
 
 			if (inventory.isPresent()) {
-				checkAvailableAndStatus
-						.add(new InventoryForBasketDto(productColor, new ProductAvailabilityDto(inventory.get(),
+				availabilityInfoList
+						.add(new ProductAvailabilityDto(productColor, new AvailabilityStatusDto(inventory.get(),
 								ProductQuantityStatus.getStatusByQuantity(inventory.get()))));
 				log.info("[ON getProductAvailableStatus] :: Get availableProductQuantity and quantityStatus for product with skuCode = "
 						+ productColor.getProductSkuCode() + ", and color hex = " + productColor.getColorHex());
 			}
 		}
 		
-		return checkAvailableAndStatus;
+		return availabilityInfoList;
 	}
 
 	private QuantityStatusDto createQuantityStatusDto(List<Inventory> inventories) {
@@ -95,4 +103,26 @@ public class InventoryServiceImpl implements InventoryService {
 
 		return new QuantityStatusDto(generalStatus, colorHexStatus);
 	}
+
+	@Override
+	public void updateProductAvailability(List<String> productSkuCodeList) {
+		List<Inventory> inventoryList = inventoryRepository.findByProductColorProductSkuCodeIn(productSkuCodeList);
+		Map<String, List<Inventory>> skuCodeInventoryMap = inventoryList.stream().collect(Collectors
+				.groupingBy(inventory -> inventory.getProductColor().getProductSkuCode(), Collectors.toList()));
+		
+		for(String skuCode : productSkuCodeList) {
+			int quantity = skuCodeInventoryMap.get(skuCode).stream().mapToInt(Inventory::getQuantity).sum();
+			if(quantity == 0) {
+				Optional<Product> product = productRepository.findBySkuCode(skuCode);
+				if(product.isPresent()) {
+					product.get().setAvailable(false);
+					productRepository.save(product.get());
+				}
+				
+				log.info("[ON updateProductAvailability] :: set product availability to false for product with skucode {}", skuCode);
+			}
+		}
+		
+	}
+	
 }

@@ -4,6 +4,8 @@ import com.cozyhome.onlineshop.exception.DataAlreadyExistException;
 import com.cozyhome.onlineshop.exception.AuthException;
 import com.cozyhome.onlineshop.exception.DataNotFoundException;
 import com.cozyhome.onlineshop.exception.InvalidTokenException;
+import com.cozyhome.onlineshop.exception.ProductOutOfStockException;
+
 import io.jsonwebtoken.JwtException;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.UnexpectedTypeException;
@@ -45,7 +47,7 @@ public class CozyHomeExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler({ConstraintViolationException.class, UnexpectedTypeException.class,
-            MethodArgumentTypeMismatchException.class, DataAlreadyExistException.class})
+            MethodArgumentTypeMismatchException.class, DataAlreadyExistException.class, ProductOutOfStockException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<Object> handleValidationException(Exception exception) {
         return buildErrorResponse(exception, HttpStatus.BAD_REQUEST);

@@ -22,8 +22,8 @@ import com.cozyhome.onlineshop.dto.ProductForBasketDto;
 import com.cozyhome.onlineshop.dto.ProductStatusDto;
 import com.cozyhome.onlineshop.dto.SearchResultDto;
 import com.cozyhome.onlineshop.dto.filter.FilterDto;
-import com.cozyhome.onlineshop.dto.inventory.InventoryForBasketDto;
 import com.cozyhome.onlineshop.dto.inventory.ProductAvailabilityDto;
+import com.cozyhome.onlineshop.dto.inventory.AvailabilityStatusDto;
 import com.cozyhome.onlineshop.dto.productcard.ProductCardDto;
 import com.cozyhome.onlineshop.dto.request.PageableDto;
 import com.cozyhome.onlineshop.dto.request.ProductColorDto;
@@ -180,7 +180,7 @@ public class ProductServiceImpl implements ProductService {
 	@Override
 	public List<ProductForBasketDto> getProductsForBasket(List<ProductColorDto> productColorDtos) {
 		Map<String, Product> productMap = new HashMap<>();
-		Map<ProductColorDto, ProductAvailabilityDto> productAvailableAndStatusMap = new HashMap<>();
+		Map<ProductColorDto, AvailabilityStatusDto> productAvailableAndStatusMap = new HashMap<>();
 		List<String> skuCodes = productColorDtos.stream().map(ProductColorDto::getProductSkuCode).toList();
 
 		List<Product> products = productRepository.findAllByStatusNotDeletedAndSkuCodeIn(skuCodes);
@@ -190,12 +190,12 @@ public class ProductServiceImpl implements ProductService {
 		}
 		Map<ProductColorDto, ImageProduct> imagesMap = imageRepositoryCustom
 				.findMainImagesByProductColorList(productColorDtos);
-		List<InventoryForBasketDto> inventoryForBasket = inventoryService.getProductAvailableStatus(productColorDtos);
+		List<ProductAvailabilityDto> productAvailabilityDto = inventoryService.getProductAvailableStatus(productColorDtos);
 
 		products.forEach(product -> productMap.put(product.getSkuCode(), product));
-		if (!inventoryForBasket.isEmpty()) {
-			inventoryForBasket.forEach(inventory -> productAvailableAndStatusMap.put(inventory.getProductColorDto(),
-					inventory.getProductAvailabilityDto()));
+		if (!productAvailabilityDto.isEmpty()) {
+			productAvailabilityDto.forEach(dto -> productAvailableAndStatusMap.put(dto.getProductColorDto(),
+					dto.getAvailabilityStatusDto()));
 		}
 
 		return productBuilder.buildProductsShopCard(productMap, imagesMap, productColorDtos,
