@@ -3,7 +3,7 @@ package com.cozyhome.onlineshop.dto.basket;
 import com.cozyhome.onlineshop.validation.ValidColorHex;
 import com.cozyhome.onlineshop.validation.ValidSkuCode;
 
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Min;
 import lombok.Data;
 
 @Data
@@ -15,6 +15,6 @@ public class BasketItemDto {
 	@ValidColorHex
 	private String colorHex;
 	
-	@Positive(message = "Quantity must be a positive number.")
+	@Min(value = 0, message = "Quantity must be a non-negative number.")
 	private int quantity;
 }

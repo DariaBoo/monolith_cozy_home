@@ -1,11 +1,11 @@
 package com.cozyhome.onlineshop.inventoryservice.service;
 
-import com.cozyhome.onlineshop.dto.inventory.InventoryForBasketDto;
-import com.cozyhome.onlineshop.dto.request.ProductColorDto;
-import com.cozyhome.onlineshop.dto.inventory.QuantityStatusDto;
-
 import java.util.List;
 import java.util.Map;
+
+import com.cozyhome.onlineshop.dto.inventory.ProductAvailabilityDto;
+import com.cozyhome.onlineshop.dto.inventory.QuantityStatusDto;
+import com.cozyhome.onlineshop.dto.request.ProductColorDto;
 
 public interface InventoryService {
 	
@@ -17,5 +17,7 @@ public interface InventoryService {
 	
 	QuantityStatusDto getProductCardColorQuantityStatus(String productSkuCode);
 
-	List<InventoryForBasketDto> getProductAvailableStatus(List<ProductColorDto> productColorDto);
+	List<ProductAvailabilityDto> getProductAvailableStatus(List<ProductColorDto> productColorDto);
+	
+	void updateProductAvailability(List<String> productSkuCodeList);
 }
