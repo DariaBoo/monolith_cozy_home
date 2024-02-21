@@ -17,9 +17,9 @@ public class ReviewBuilder {
     private final UserRepository userRepository;
 
     public ReviewResponse buildReviewResponse(Review review) {
-        String email = review.getEmail();
-        User user = userRepository.findByEmailAndStatus(email, UserStatusE.ACTIVE)
-                .orElseThrow(() -> new DataNotFoundException(String.format("User with email = %s doesn't found", email)));
+//        String email = review.getEmail();
+//        User user = userRepository.findByEmailAndStatus(email, UserStatusE.ACTIVE)
+//                .orElseThrow(() -> new DataNotFoundException(String.format("User with email = %s doesn't found", email)));
         log.info("[ON getReviewsForProductAllInf]:: build review with id: {} for user: {}.", review.getId(), review.getEmail());
         return ReviewResponse.builder()
                     .reviewId(review.getId().toString())
