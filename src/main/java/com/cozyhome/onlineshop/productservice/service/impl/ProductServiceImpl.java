@@ -1,5 +1,8 @@
 package com.cozyhome.onlineshop.productservice.service.impl;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -62,7 +65,7 @@ public class ProductServiceImpl implements ProductService {
 	private final boolean isMain = true;
 
 	private static final String DIRECTION_ASC = "asc";
-	private static final Direction DEFAULT_DIRECTION = Direction.DESC;
+	private static final Direction DEFAULT_DIRECTION = Direction.ASC;
 	private static final String DEFAULT_SORTING = "available";
 	private static final String ADDITIONAL_SORTING = "_id";
 	private static final String SORTING_BY_PRICE = "price";
@@ -204,14 +207,24 @@ public class ProductServiceImpl implements ProductService {
 
 	@Override
 	public SearchResultDto searchProducts(String keyWord) {
-		List<Product> products = productRepositoryCustom.search(keyWord);
+		String decodedKeyword = decodeKeyword(keyWord);
+		List<Product> products = productRepositoryCustom.search(decodedKeyword);
 		return productBuilder.buildSearchResult(products);
 	}
+	
+	private String decodeKeyword(String encodedKeyword) {
+        try {            
+            return URLDecoder.decode(encodedKeyword, StandardCharsets.UTF_8.toString());
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            return encodedKeyword;
+        }
+    }
+
 
 	private Pageable buildPageable(PageableDto pageable, SortDto sortDto) {
 		List<Order> orders = new ArrayList<>();
-		orders.add(new Order(DEFAULT_DIRECTION, DEFAULT_SORTING));
-
+				
 		if (sortDto.getFieldName() != null && sortDto.getDirection() != null) {
 			Direction direction = sortDto.getDirection().equals(DIRECTION_ASC) ? Direction.ASC : Direction.DESC;
 			if (sortDto.getFieldName().equalsIgnoreCase(SORTING_BY_PRICE)) {
@@ -221,6 +234,9 @@ public class ProductServiceImpl implements ProductService {
 		} else {
 			orders.add(new Order(DEFAULT_DIRECTION, ADDITIONAL_SORTING));
 		}
+		
+		orders.add(new Order(DEFAULT_DIRECTION, DEFAULT_SORTING));
+		
 		return PageRequest.of(pageable.getPage(), pageable.getSize(), Sort.by(orders));
 	}
 }
