@@ -29,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Transactional
 public class InventoryServiceImpl implements InventoryService {
-	
+
 	private final InventoryRepository inventoryRepository;
 	private final ProductRepository productRepository;
 
@@ -83,11 +83,12 @@ public class InventoryServiceImpl implements InventoryService {
 				availabilityInfoList
 						.add(new ProductAvailabilityDto(productColor, new AvailabilityStatusDto(inventory.get(),
 								ProductQuantityStatus.getStatusByQuantity(inventory.get()))));
-				log.info("[ON getProductAvailableStatus] :: Get availableProductQuantity and quantityStatus for product with skuCode = "
-						+ productColor.getProductSkuCode() + ", and color hex = " + productColor.getColorHex());
+				log.info(
+						"[ON getProductAvailableStatus] :: Get availableProductQuantity and quantityStatus for product with skuCode = "
+								+ productColor.getProductSkuCode() + ", and color hex = " + productColor.getColorHex());
 			}
 		}
-		
+
 		return availabilityInfoList;
 	}
 
@@ -109,20 +110,21 @@ public class InventoryServiceImpl implements InventoryService {
 		List<Inventory> inventoryList = inventoryRepository.findByProductColorProductSkuCodeIn(productSkuCodeList);
 		Map<String, List<Inventory>> skuCodeInventoryMap = inventoryList.stream().collect(Collectors
 				.groupingBy(inventory -> inventory.getProductColor().getProductSkuCode(), Collectors.toList()));
-		
-		for(String skuCode : productSkuCodeList) {
-			int quantity = skuCodeInventoryMap.get(skuCode).stream().mapToInt(Inventory::getQuantity).sum();
-			if(quantity == 0) {
-				Optional<Product> product = productRepository.findBySkuCode(skuCode);
-				if(product.isPresent()) {
+
+		for (String skuCode : productSkuCodeList) {
+			Optional<Product> product = productRepository.findBySkuCode(skuCode);
+			if (product.isPresent()) {
+				int quantity = skuCodeInventoryMap.get(skuCode).stream().mapToInt(Inventory::getQuantity).sum();
+				if (quantity == 0) {
 					product.get().setAvailable(false);
-					productRepository.save(product.get());
+				} else {
+					product.get().setAvailable(true);
 				}
-				
-				log.info("[ON updateProductAvailability] :: set product availability to false for product with skucode {}", skuCode);
 			}
+			productRepository.save(product.get());
+			log.info("[ON updateProductAvailability] :: update product availability for product with skucode {}",
+					skuCode);
 		}
-		
 	}
-	
+
 }
