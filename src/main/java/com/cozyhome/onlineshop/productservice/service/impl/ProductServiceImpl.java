@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.bson.types.ObjectId;
 import org.springframework.data.domain.Page;
@@ -65,7 +66,7 @@ public class ProductServiceImpl implements ProductService {
 	private final boolean isMain = true;
 
 	private static final String DIRECTION_ASC = "asc";
-	private static final Direction DEFAULT_DIRECTION = Direction.ASC;
+	private static final Direction DEFAULT_DIRECTION = Direction.DESC;
 	private static final String DEFAULT_SORTING = "available";
 	private static final String ADDITIONAL_SORTING = "_id";
 	private static final String SORTING_BY_PRICE = "price";
@@ -224,7 +225,8 @@ public class ProductServiceImpl implements ProductService {
 
 	private Pageable buildPageable(PageableDto pageable, SortDto sortDto) {
 		List<Order> orders = new ArrayList<>();
-				
+		orders.add(new Order(DEFAULT_DIRECTION, DEFAULT_SORTING));
+						
 		if (sortDto.getFieldName() != null && sortDto.getDirection() != null) {
 			Direction direction = sortDto.getDirection().equals(DIRECTION_ASC) ? Direction.ASC : Direction.DESC;
 			if (sortDto.getFieldName().equalsIgnoreCase(SORTING_BY_PRICE)) {
@@ -234,9 +236,12 @@ public class ProductServiceImpl implements ProductService {
 		} else {
 			orders.add(new Order(DEFAULT_DIRECTION, ADDITIONAL_SORTING));
 		}
-		
-		orders.add(new Order(DEFAULT_DIRECTION, DEFAULT_SORTING));
-		
-		return PageRequest.of(pageable.getPage(), pageable.getSize(), Sort.by(orders));
+	
+//		return PageRequest.of(pageable.getPage(), pageable.getSize(), Sort.by(orders));
+		return PageRequest.of(
+	            pageable.getPage(),
+	            pageable.getSize(),
+	            Sort.by(orders.stream().map(order -> new Sort.Order(order.getDirection(), order.getProperty())).collect(Collectors.toList()))
+	    );
 	}
 }
