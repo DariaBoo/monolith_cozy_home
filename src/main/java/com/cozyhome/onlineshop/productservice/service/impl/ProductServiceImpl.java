@@ -236,8 +236,7 @@ public class ProductServiceImpl implements ProductService {
 		} else {
 			orders.add(new Order(DEFAULT_DIRECTION, ADDITIONAL_SORTING));
 		}
-	
-//		return PageRequest.of(pageable.getPage(), pageable.getSize(), Sort.by(orders));
+
 		return PageRequest.of(
 	            pageable.getPage(),
 	            pageable.getSize(),
