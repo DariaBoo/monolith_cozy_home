@@ -3,6 +3,7 @@ package com.cozyhome.onlineshop.productservice.service.builder;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -67,6 +68,9 @@ public class ProductBuilder {
 		List<ProductColorDto> productColorList = buildProductColorList(quantityStatusMap);
 		Map<String, List<ImageProduct>> imageMap = getImageMapByColor(productColorList);
 
+		if(imageMap.isEmpty()) {
+			return new ArrayList<>();
+		}
 		return products.stream().map(product -> buildProductDto(product, imageMap.get(product.getSkuCode()),
 				quantityStatusMap.get(product.getSkuCode()))).toList();
 	}
@@ -108,6 +112,11 @@ public class ProductBuilder {
 					.toList();
 		}
 		Map<String, List<ImageProduct>> imageMap = getImageMapByColor(productColorDtos);
+		
+		if(imageMap.isEmpty()) {
+			return new ArrayList<>();
+		}
+		
 		return products.stream().map(product -> buildProductDto(product,
 				List.of(imageMap.get(product.getSkuCode()).get(0)), quantityStatusMap.get(product.getSkuCode())))
 				.toList();
@@ -315,6 +324,9 @@ public class ProductBuilder {
 	}
 
 	private Map<String, List<ImageProduct>> getImageMapByColor(List<ProductColorDto> productColorDtos) {
+		if(productColorDtos.isEmpty()) {
+			return new HashMap<>();
+		}
 		return imageRepositoryCustom.findMainImagesByProductColorList(productColorDtos)
 				.entrySet().stream()
 				.collect(Collectors.groupingBy(pair -> pair.getKey().getProductSkuCode(),
