@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @CrossOrigin({ "${api.front.base_url}", "${api.front.localhost}", "${api.front.test_url}",
-		"${api.front.additional_url}", "${api.front.main.url}", "${api.front.temporal.url}" })
+		"${api.front.additional_url}", "${api.front.main.url}", "${api.front.temporal.url}", "${api.front.test2.url}" })
 @Tag(name = "Category")
 @CommonApiResponses
 @RequiredArgsConstructor

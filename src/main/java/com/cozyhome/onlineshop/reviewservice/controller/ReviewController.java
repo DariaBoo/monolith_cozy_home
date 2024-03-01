@@ -28,7 +28,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @CrossOrigin({ "${api.front.base_url}", "${api.front.localhost}", "${api.front.test_url}",
-	"${api.front.additional_url}", "${api.front.main.url}", "${api.front.temporal.url}" })
+	"${api.front.additional_url}", "${api.front.main.url}", "${api.front.temporal.url}", "${api.front.test2.url}" })
 
 @Validated
 @CommonApiResponses
