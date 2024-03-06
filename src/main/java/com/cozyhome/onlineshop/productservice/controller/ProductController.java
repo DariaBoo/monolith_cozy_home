@@ -129,7 +129,13 @@ public class ProductController {
             @ApiResponse(responseCode = SwaggerResponse.Code.CODE_400, description = SwaggerResponse.Message.CODE_400) })
     @PostMapping("/filter/parameters")
     public ResponseEntity<FilterDto> getFilterParameters(@RequestBody @Valid FilterDto filter, @RequestParam byte size) {
-        return new ResponseEntity<>(productService.getFilterParameters(filter, size), HttpStatus.OK);
+    	
+    	FilterDto dto = productService.getFilterParameters(filter, size);
+    	
+    	if(filter.getParentCategoryId() != null) {
+    		dto.setParentCategoryId(filter.getParentCategoryId());
+    	}
+        return new ResponseEntity<>(dto, HttpStatus.OK);
     }
 
     @Operation(summary = "Get Product by skuCode and color's hex", description = "Get product by provided product's skuCode and color's hex.")
