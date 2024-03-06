@@ -15,6 +15,8 @@ import java.util.List;
 @Builder
 @Data
 public class ProductCardDto {
+	
+	private String parentCategoryId;
     private String categoryName;
     private String subCategoryName;
 

@@ -146,15 +146,19 @@ public class ProductBuilder {
 
 	public ProductCardDto buildProductCardDto(Product product, String colorId) {
 		final String productSkuCode = product.getSkuCode();
-		ObjectId id = product.getSubCategory().getParentId();
+		ObjectId categoryId = product.getSubCategory().getParentId();
 
-		String categoryName = categoryRepository.findById(id)
+		String categoryName = categoryRepository.findById(categoryId)
 				.map(Category::getName)
-				.orElseThrow(() -> new DataNotFoundException(String.format("Category with id = %s doesn't found", id)));
+				.orElseThrow(() -> new DataNotFoundException(String.format("Category with id = %s doesn't found", categoryId)));
 
-		ProductCardDto productCardDto = ProductCardDto.builder().categoryName(categoryName)
-				.subCategoryName(product.getSubCategory().getName()).skuCode(productSkuCode).name(product.getName())
-				.description(product.getDescription()).price(roundBigDecimalToZeroDecimalPlace(product.getPrice()))
+		ProductCardDto productCardDto = ProductCardDto.builder().parentCategoryId(categoryId.toString())
+				.categoryName(categoryName)
+				.subCategoryName(product.getSubCategory().getName())
+				.skuCode(productSkuCode)
+				.name(product.getName())
+				.description(product.getDescription())
+				.price(roundBigDecimalToZeroDecimalPlace(product.getPrice()))
 				.materials(product.getMaterials().stream().map(Material::getName).toList())
 				.collection(modelMapper.map(product.getCollection(), CollectionDto.class))
 				.weight(roundFloatToOneDecimalPlace(product.getWeight()))
