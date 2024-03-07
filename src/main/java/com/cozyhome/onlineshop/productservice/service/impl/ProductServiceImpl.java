@@ -83,7 +83,7 @@ public class ProductServiceImpl implements ProductService {
 	public List<ProductDto> getRandomProductsByStatus(Byte status, int productCount) {
 		List<Product> products = productRepositoryCustom
 				.getRandomByStatusAndInStock(ProductStatus.valueOfDescription(status), productCount);
-		if(products.isEmpty()) {
+		if (products.isEmpty()) {
 			return new ArrayList<>();
 		}
 		return productBuilder.buildProductDtoList(products, isMain);
@@ -103,7 +103,7 @@ public class ProductServiceImpl implements ProductService {
 		}
 		List<Product> products = productRepositoryCustom.getRandomByStatusAndCategoryIdAndInStock(
 				ProductStatus.valueOfDescription(status), categoriesIds, countOfProducts);
-		if(products.isEmpty()) {
+		if (products.isEmpty()) {
 			return new ArrayList<>();
 		}
 		return productBuilder.buildProductDtoList(products, isMain);
@@ -130,14 +130,17 @@ public class ProductServiceImpl implements ProductService {
 	@Override
 	public List<ProductDto> getFilteredProducts(FilterDto filter, PageableDto pageable, SortDto sortDto) {
 		Pageable currentPageable = buildPageable(pageable, sortDto);
-		List<Product> products = productRepositoryCustom.filterProductsByCriterias(filter, currentPageable);
+		List<Product> filteredProducts = productRepositoryCustom.filterProductsByCriterias(filter, currentPageable);
+		if(filteredProducts.isEmpty()) {
+			return new ArrayList<>();
+		}
 		List<String> colors;
 		if (filter.getColors() == null) {
 			colors = new ArrayList<>();
 		} else {
 			colors = filter.getColors().stream().map(color -> color.getId()).toList();
 		}
-		return productBuilder.buildFilteredProductDtoList(products, colors);
+		return productBuilder.buildFilteredProductDtoList(filteredProducts, colors);
 	}
 
 	@Override
@@ -194,12 +197,13 @@ public class ProductServiceImpl implements ProductService {
 		}
 		Map<ProductColorDto, ImageProduct> imagesMap = imageRepositoryCustom
 				.findMainImagesByProductColorList(productColorDtos);
-		List<ProductAvailabilityDto> productAvailabilityDto = inventoryService.getProductAvailableStatus(productColorDtos);
+		List<ProductAvailabilityDto> productAvailabilityDto = inventoryService
+				.getProductAvailableStatus(productColorDtos);
 
 		products.forEach(product -> productMap.put(product.getSkuCode(), product));
 		if (!productAvailabilityDto.isEmpty()) {
-			productAvailabilityDto.forEach(dto -> productAvailableAndStatusMap.put(dto.getProductColorDto(),
-					dto.getAvailabilityStatusDto()));
+			productAvailabilityDto.forEach(
+					dto -> productAvailableAndStatusMap.put(dto.getProductColorDto(), dto.getAvailabilityStatusDto()));
 		}
 
 		return productBuilder.buildProductsShopCard(productMap, imagesMap, productColorDtos,
@@ -212,21 +216,20 @@ public class ProductServiceImpl implements ProductService {
 		List<Product> products = productRepositoryCustom.search(decodedKeyword);
 		return productBuilder.buildSearchResult(products);
 	}
-	
-	private String decodeKeyword(String encodedKeyword) {
-        try {            
-            return URLDecoder.decode(encodedKeyword, StandardCharsets.UTF_8.toString());
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-            return encodedKeyword;
-        }
-    }
 
+	private String decodeKeyword(String encodedKeyword) {
+		try {
+			return URLDecoder.decode(encodedKeyword, StandardCharsets.UTF_8.toString());
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+			return encodedKeyword;
+		}
+	}
 
 	private Pageable buildPageable(PageableDto pageable, SortDto sortDto) {
 		List<Order> orders = new ArrayList<>();
 		orders.add(new Order(DEFAULT_DIRECTION, DEFAULT_SORTING));
-						
+
 		if (sortDto.getFieldName() != null && sortDto.getDirection() != null) {
 			Direction direction = sortDto.getDirection().equals(DIRECTION_ASC) ? Direction.ASC : Direction.DESC;
 			if (sortDto.getFieldName().equalsIgnoreCase(SORTING_BY_PRICE)) {
@@ -237,10 +240,7 @@ public class ProductServiceImpl implements ProductService {
 			orders.add(new Order(DEFAULT_DIRECTION, ADDITIONAL_SORTING));
 		}
 
-		return PageRequest.of(
-	            pageable.getPage(),
-	            pageable.getSize(),
-	            Sort.by(orders.stream().map(order -> new Sort.Order(order.getDirection(), order.getProperty())).collect(Collectors.toList()))
-	    );
+		return PageRequest.of(pageable.getPage(), pageable.getSize(), Sort.by(orders.stream()
+				.map(order -> new Sort.Order(order.getDirection(), order.getProperty())).collect(Collectors.toList())));
 	}
 }
