@@ -130,6 +130,8 @@ public class ProductServiceImpl implements ProductService {
 	@Override
 	public List<ProductDto> getFilteredProducts(FilterDto filter, PageableDto pageable, SortDto sortDto) {
 		Pageable currentPageable = buildPageable(pageable, sortDto);
+		String decodedKeyWord = decodeKeyword(filter.getKeyWord());
+		filter.setKeyWord(decodedKeyWord);
 		List<Product> filteredProducts = productRepositoryCustom.filterProductsByCriterias(filter, currentPageable);
 		if(filteredProducts.isEmpty()) {
 			return new ArrayList<>();
@@ -145,6 +147,8 @@ public class ProductServiceImpl implements ProductService {
 
 	@Override
 	public FilterDto getFilterParameters(FilterDto filter, byte size) {
+		String decodedKeyWord = decodeKeyword(filter.getKeyWord());
+		filter.setKeyWord(decodedKeyWord);
 		List<Product> filteredProducts = productRepositoryCustom.filterProductsByCriterias(filter, null);
 		if (filteredProducts.isEmpty()) {
 			log.info("[ON getFilterParameters]:: Products with the given parameters don't found.");
