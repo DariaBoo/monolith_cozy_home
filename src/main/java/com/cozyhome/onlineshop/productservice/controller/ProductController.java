@@ -16,9 +16,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cozyhome.onlineshop.dto.ProductDto;
 import com.cozyhome.onlineshop.dto.ProductForBasketDto;
-import com.cozyhome.onlineshop.dto.SearchResultDto;
 import com.cozyhome.onlineshop.dto.ProductStatusDto;
+import com.cozyhome.onlineshop.dto.SearchResultDto;
 import com.cozyhome.onlineshop.dto.filter.FilterDto;
+import com.cozyhome.onlineshop.dto.filter.FilteredProductsDto;
 import com.cozyhome.onlineshop.dto.productcard.ProductCardDto;
 import com.cozyhome.onlineshop.dto.request.PageableDto;
 import com.cozyhome.onlineshop.dto.request.ProductColorDto;
@@ -112,15 +113,20 @@ public class ProductController {
             @ApiResponse(responseCode = SwaggerResponse.Code.CODE_200, description = SwaggerResponse.Message.CODE_200_FOUND_DESCRIPTION),
             @ApiResponse(responseCode = SwaggerResponse.Code.CODE_400, description = SwaggerResponse.Message.CODE_400) })
     @PostMapping("/filter")
-    public ResponseEntity<List<ProductDto>> getFilteredProducts(@RequestBody FilterDto filter,
+    public ResponseEntity<FilteredProductsDto> getFilteredProducts(@RequestBody FilterDto filter,
                                                                       @Valid PageableDto pageable,
                                                                       @Valid SortDto sortDto, HttpServletRequest request) {
+    	FilteredProductsDto dto = new FilteredProductsDto();
     	String userId = (String) request.getAttribute(userIdAttribute);
-    	List<ProductDto> products = productService.getFilteredProducts(filter, pageable, sortDto);
-    	if(userId != null) {
-    		favoriteProductService.markFavoritesForUser(userId, products);
+    	List<ProductDto> filteredProducts = productService.getFilteredProducts(filter, pageable, sortDto);
+    	if(!filteredProducts.isEmpty() && userId != null) {
+    		favoriteProductService.markFavoritesForUser(userId, filteredProducts);
     	}
-        return ResponseEntity.ok(products);
+    	dto.setFilteredProducts(filteredProducts);
+    	if(filter.getKeyWord() != null) {
+    		dto.setKeyWord(filter.getKeyWord());
+    	}
+        return ResponseEntity.ok(dto);
     }
 
     @Operation(summary = "Get Filter Parameters", description = "Get the filter parameters for filtering products.")
