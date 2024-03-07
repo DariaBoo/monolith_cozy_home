@@ -130,12 +130,12 @@ public class ProductServiceImpl implements ProductService {
 	@Override
 	public List<ProductDto> getFilteredProducts(FilterDto filter, PageableDto pageable, SortDto sortDto) {
 		Pageable currentPageable = buildPageable(pageable, sortDto);
-		if(filter.getKeyWord()!=null) {
-			String decodedKeyWord = decodeKeyword(filter.getKeyWord());
+		if (filter.getKeyWord() != null) {
+			String decodedKeyWord = decodeKeyword(filter.getKeyWord().trim());
 			filter.setKeyWord(decodedKeyWord);
 		}
 		List<Product> filteredProducts = productRepositoryCustom.filterProductsByCriterias(filter, currentPageable);
-		if(filteredProducts.isEmpty()) {
+		if (filteredProducts.isEmpty()) {
 			return new ArrayList<>();
 		}
 		List<String> colors;
@@ -149,11 +149,11 @@ public class ProductServiceImpl implements ProductService {
 
 	@Override
 	public FilterDto getFilterParameters(FilterDto filter, byte size) {
-		if(filter.getKeyWord()!=null) {
-			String decodedKeyWord = decodeKeyword(filter.getKeyWord());
+		if (filter.getKeyWord() != null) {
+			String decodedKeyWord = decodeKeyword(filter.getKeyWord().trim());
 			filter.setKeyWord(decodedKeyWord);
 		}
-		
+
 		List<Product> filteredProducts = productRepositoryCustom.filterProductsByCriterias(filter, null);
 		if (filteredProducts.isEmpty()) {
 			log.info("[ON getFilterParameters]:: Products with the given parameters don't found.");
@@ -221,7 +221,10 @@ public class ProductServiceImpl implements ProductService {
 
 	@Override
 	public SearchResultDto searchProducts(String keyWord) {
-		String decodedKeyword = decodeKeyword(keyWord);
+		String decodedKeyword = "";
+		if (keyWord != null) {
+			decodedKeyword = decodeKeyword(keyWord);
+		}
 		List<Product> products = productRepositoryCustom.search(decodedKeyword);
 		return productBuilder.buildSearchResult(products);
 	}

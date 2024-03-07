@@ -114,8 +114,8 @@ public class ProductController {
     @PostMapping("/filter")
     public ResponseEntity<List<ProductDto>> getFilteredProducts(@RequestBody FilterDto filter,
                                                                       @Valid PageableDto pageable,
-                                                                      @Valid SortDto sortDto, HttpServletRequest request) {
-    	
+                                                                      @Valid SortDto sortDto, @RequestParam(required = false) String keyWord, HttpServletRequest request) {
+    	filter.setKeyWord(keyWord);
     	String userId = (String) request.getAttribute(userIdAttribute);
     	List<ProductDto> filteredProducts = productService.getFilteredProducts(filter, pageable, sortDto);
     	if(!filteredProducts.isEmpty() && userId != null) {
@@ -130,8 +130,9 @@ public class ProductController {
             @ApiResponse(responseCode = SwaggerResponse.Code.CODE_200, description = SwaggerResponse.Message.CODE_200_FOUND_DESCRIPTION),
             @ApiResponse(responseCode = SwaggerResponse.Code.CODE_400, description = SwaggerResponse.Message.CODE_400) })
     @PostMapping("/filter/parameters")
-    public ResponseEntity<FilterDto> getFilterParameters(@RequestBody @Valid FilterDto filter, @RequestParam byte size) {
-    	
+    public ResponseEntity<FilterDto> getFilterParameters(@RequestBody @Valid FilterDto filter, @RequestParam byte size, @RequestParam(required = false) String keyWord) {
+
+    	filter.setKeyWord(keyWord);
     	FilterDto dto = productService.getFilterParameters(filter, size);
     	
     	if(filter.getParentCategoryId() != null) {
