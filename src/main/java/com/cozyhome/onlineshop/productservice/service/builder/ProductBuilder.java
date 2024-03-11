@@ -20,6 +20,7 @@ import com.cozyhome.onlineshop.dto.ProductForBasketDto;
 import com.cozyhome.onlineshop.dto.ProductSearchDto;
 import com.cozyhome.onlineshop.dto.SearchResultDto;
 import com.cozyhome.onlineshop.dto.inventory.AvailabilityStatusDto;
+import com.cozyhome.onlineshop.dto.inventory.ProductAvailabilityDto;
 import com.cozyhome.onlineshop.dto.inventory.QuantityStatusDto;
 import com.cozyhome.onlineshop.dto.productcard.ColorQuantityStatusDto;
 import com.cozyhome.onlineshop.dto.productcard.ProductCardDto;
@@ -280,9 +281,27 @@ public class ProductBuilder {
 	}
 
 	private ProductSearchDto mapToProductSearchDto(Product product, ImageProduct image) {
-		ProductSearchDto result = ProductSearchDto.builder().skuCode(product.getSkuCode()).name(product.getName())
-				.price(product.getPrice()).priceWithDiscount(product.getPriceWithDiscount())
-				.imagePath(imagePathBase + image.getSliderImageName()).colorHex(image.getColor().getId()).build();
+		String skuCode = product.getSkuCode();
+		String colorHex = image.getColor().getId();
+		ProductSearchDto result = ProductSearchDto.builder()
+				.skuCode(skuCode)
+				.name(product.getName())
+				.price(product.getPrice())
+				.imagePath(imagePathBase + image.getSliderImageName())
+				.colorHex(colorHex)
+				.build();
+		
+		BigDecimal discount = BigDecimal.valueOf(product.getDiscount());
+		
+		if(!discount.equals(NULL_PERCENT)) {
+			result.setPriceWithDiscount(product.getPriceWithDiscount());
+		}
+		ProductColorDto dto = new ProductColorDto(skuCode, colorHex);
+		String quantityStatus = inventoryService.getQuantityStatusByProductColor(dto);
+		
+		if(quantityStatus != null) {
+			result.setQuantityStatus(quantityStatus);
+		}
 		return result;
 	}
 
