@@ -19,4 +19,5 @@ public class ProductSearchDto {
 	private String colorHex;
 	private BigDecimal price;
 	private BigDecimal priceWithDiscount;
+	private String quantityStatus;
 }
